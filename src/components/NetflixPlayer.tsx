@@ -1446,7 +1446,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
 
       {/* Centro (Play/Skip/Emotes) */}
       <div className="flex items-center justify-center gap-6 md:gap-20">
-        {isHost && (
+        {(!roomId || isHost) && (
           <button onClick={() => skip(-10)} className="text-white hover:scale-110 transition-transform flex flex-col items-center">
             <RotateCcw size={32} className="md:w-12 md:h-12" />
             <span className="text-[10px] md:text-xs font-bold mt-1">10</span>
@@ -1487,7 +1487,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
           </AnimatePresence>
         </div>
 
-        {isHost ? (
+        {(!roomId || isHost) ? (
           <button 
             onClick={(e) => {
               e.stopPropagation();
@@ -1506,7 +1506,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
           </div>
         )}
 
-        {isHost && (
+        {(!roomId || isHost) && (
           <button onClick={() => skip(10)} className="text-white hover:scale-110 transition-transform flex flex-col items-center">
             <RotateCw size={32} className="md:w-12 md:h-12" />
             <span className="text-[10px] md:text-xs font-bold mt-1">10</span>
@@ -1517,7 +1517,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         {/* Base (Barra de Progresso e Controles) */}
         <div className="space-y-4">
           {/* Barra de Progresso */}
-          <div className={`flex items-center gap-4 group/progress ${!isHost ? 'pointer-events-none opacity-50' : ''}`}>
+          <div className={`flex items-center gap-4 group/progress ${(roomId && !isHost) ? 'pointer-events-none opacity-50' : ''}`}>
             <span className="text-white text-sm font-medium min-w-[50px]">{formatTime(currentTime)}</span>
             <div className="relative flex-1 h-1.5 bg-gray-600 rounded-full overflow-hidden cursor-pointer">
               <input
