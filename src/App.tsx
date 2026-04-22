@@ -551,7 +551,104 @@ const UniverseTabView = React.memo(({
             </div>
           </motion.div>
         ) : (
-          null
+          <motion.div
+            key="universe-saga"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            className="pb-40"
+          >
+            {/* Dynamic Identity Background based on Franchise Name Hash */}
+            {(() => {
+              const hash = activeFranchise.name.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+              const gradients = [
+                'from-red-600/30', 'from-blue-600/30', 'from-emerald-600/30', 
+                'from-purple-600/30', 'from-yellow-600/30', 'from-cyan-600/30'
+              ];
+              const themeColor = gradients[hash % gradients.length];
+              
+              return (
+                <div className="relative h-[60vh] md:h-[80vh] w-full mb-12 md:mb-20">
+                  <div className="absolute inset-0">
+                    <img src={activeFranchise.backdrop || activeFranchise.poster} alt={activeFranchise.name} className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/70 to-transparent" />
+                    <div className={`absolute inset-0 bg-gradient-to-t ${themeColor} via-transparent to-transparent mix-blend-overlay`} />
+                    <div className={`absolute inset-0 bg-gradient-to-b ${themeColor} via-transparent to-[#050505] opacity-50`} />
+                  </div>
+                  
+                  <button 
+                    onClick={() => navigate('/universe')}
+                    className="absolute top-24 left-6 md:left-12 z-50 p-4 bg-white/5 hover:bg-white/10 rounded-full backdrop-blur-xl border border-white/10 transition-all group"
+                  >
+                    <ArrowLeft size={24} className="text-white group-hover:-translate-x-1 transition-transform" />
+                  </button>
+    
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 md:p-12 z-10 pointer-events-none pt-24">
+                    {activeFranchise.logo ? (
+                      <img src={activeFranchise.logo} alt={activeFranchise.name} className="h-32 md:h-64 object-contain mb-8 drop-shadow-[0_20px_50px_rgba(0,0,0,0.9)] animate-fade-in" referrerPolicy="no-referrer" />
+                    ) : (
+                      <h1 className="text-5xl md:text-[6rem] font-black text-white italic uppercase tracking-tighter mb-8 drop-shadow-2xl text-center">{activeFranchise.name}</h1>
+                    )}
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="px-6 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full">
+                        <span className="text-white font-black uppercase tracking-[0.3em] text-[10px] md:text-sm">Multiverso Expandido</span>
+                      </div>
+                      <span className="text-white/60 font-bold uppercase tracking-widest text-[10px] md:text-xs text-center border-t border-white/10 pt-4 w-48 mx-auto">{activeFranchise.movies.length} Arquivos Originais</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Movies Grid */}
+            <div className="px-6 md:px-12 max-w-7xl mx-auto relative z-20">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-8">
+                {activeFranchise.movies.map((movie: any, idx: number) => (
+                  <motion.div
+                    key={movie.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="relative cursor-pointer group rounded-2xl md:rounded-[2rem] overflow-hidden aspect-[2/3] bg-[#111] border border-white/5 hover:border-white/20 transition-all shadow-2xl"
+                    onClick={() => handleSelectMovie(movie)}
+                  >
+                    <img 
+                      src={movie.poster_path?.startsWith('http') ? movie.poster_path : `https://image.tmdb.org/t/p/w500/${movie.poster_path}`} 
+                      alt={movie.title || movie.name}
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" 
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                    
+                    <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded-md border border-white/10 z-10">
+                      <span className="text-white font-black italic text-[10px]">{movie.release_year || movie.release_date?.split('-')[0] || 'TBA'}</span>
+                    </div>
+
+                    {/* Collection Logo Brand Header */}
+                    {activeFranchise.logo && (
+                       <div className="absolute top-0 right-0 p-3 pt-4 pr-4 bg-gradient-to-bl from-black/80 to-transparent opacity-80 group-hover:opacity-100 transition-opacity">
+                         <img src={activeFranchise.logo} className="h-4 md:h-6 object-contain" referrerPolicy="no-referrer" />
+                       </div>
+                    )}
+
+                    <div className="absolute bottom-0 left-0 w-full p-4 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 flex justify-between items-end z-10">
+                      <p className="text-white font-black italic text-sm leading-tight uppercase tracking-tighter w-2/3 truncate">{movie.title || movie.name}</p>
+                      
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleMyList(movie);
+                        }}
+                        className={`p-2 md:p-3 rounded-xl transition-all ${myListIds.has(movie.id) ? 'bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.5)]' : 'bg-white/10 text-white backdrop-blur-md border border-white/20 hover:bg-white/20'}`}
+                      >
+                        <Plus size={16} className={myListIds.has(movie.id) ? 'rotate-45' : ''} />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </motion.div>
