@@ -3480,16 +3480,14 @@ export default function App() {
   }, [navigate, location.pathname]);
 
   const handlePlayMovie = useCallback((movie: Movie, episodeUrl?: string, startTime?: number) => {
-    // Travamos a orientação e navegamos de forma assíncrona leve
+    // Travamos a orientação e navegamos de forma síncrona
     if (screen.orientation && (screen.orientation as any).lock) {
       (screen.orientation as any).lock('landscape').catch(() => {});
     }
     
-    // Pequeno delay para permitir que o navegador processe a trava antes da transição pesada
-    setTimeout(() => {
-      const search = window.location.search;
-      navigate(`/watch/${movie.id}${search}`, { state: { movie, episodeUrl, startTime } });
-    }, 50);
+    // Navegação síncrona permite que o autoplay passe no browser sem block
+    const search = window.location.search;
+    navigate(`/watch/${movie.id}${search}`, { state: { movie, episodeUrl, startTime } });
   }, [navigate]);
 
   const closeMovieDetails = () => {

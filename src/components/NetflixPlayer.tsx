@@ -279,7 +279,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
                 maxBufferSize: 30 * 1024 * 1024,
                 backBufferLength: 10,
                 autoStartLoad: true,
-                startLevel: -1,
+                startLevel: 0,
                 abrEwmaFastLive: 1,
                 abrEwmaSlowLive: 3,
                 fragLoadingMaxRetry: 10,
@@ -356,7 +356,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
                 maxBufferSize: 30 * 1024 * 1024,
                 backBufferLength: 10,
                 autoStartLoad: true,
-                startLevel: -1,
+                startLevel: 0,
                 abrEwmaFastLive: 1,
                 abrEwmaSlowLive: 3,
                 fragLoadingMaxRetry: 10,
@@ -1039,7 +1039,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
       <video
         key={`${activeSrc}-${sessionKey}-${playerMode}`}
         ref={videoRef}
-        className={`w-full h-full object-contain transition-opacity duration-700 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+        className="w-full h-full object-contain"
         autoPlay
         playsInline
         webkit-playsinline="true"
