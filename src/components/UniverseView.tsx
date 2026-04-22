@@ -367,7 +367,7 @@ const UniverseView: React.FC<UniverseViewProps> = React.memo(({
                       <div className="bg-white/5 backdrop-blur-3xl p-10 rounded-[3rem] border border-white/5 group hover:border-purple-500/30 transition-all">
                          <Zap className="text-purple-500 mb-6" size={32} />
                          <h4 className="text-white font-black text-xl uppercase italic mb-2">Carga Instantânea</h4>
-                         <p className="text-gray-500 text-xs font-bold leading-relaxed">Streaming otimizado via rede de borda Netplay Core.</p>
+                         <p className="text-gray-500 text-xs font-bold leading-relaxed">Streaming otimizado via rede de borda NetPremium Core.</p>
                       </div>
                       <div className="bg-white/5 backdrop-blur-3xl p-10 rounded-[3rem] border border-white/5 group hover:border-green-500/30 transition-all">
                          <Ghost className="text-green-500 mb-6" size={32} />

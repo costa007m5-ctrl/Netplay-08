@@ -99,7 +99,7 @@ const AppInfo: React.FC<AppInfoProps> = ({ onContinue, movies }) => {
             <Play size={24} className="text-white fill-white ml-0.5" />
           </div>
           <div className="flex flex-col">
-            <span className="text-white font-black text-3xl italic tracking-tighter uppercase leading-none">Netplay</span>
+            <span className="text-white font-black text-3xl italic tracking-tighter uppercase leading-none">NetPremium</span>
             <span className="text-red-600 font-bold text-[8px] uppercase tracking-[0.4em] italic mt-1 ml-0.5">Premium Hub</span>
           </div>
         </div>

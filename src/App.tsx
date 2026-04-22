@@ -124,6 +124,16 @@ const HomeView = React.memo(({
     return myMovies[Math.floor(Math.random() * myMovies.length)];
   }, [myMovies]);
 
+  // Optimize and randomize movies per user per session to speed up rendering
+  const optimizedGenreMovies = useMemo(() => {
+    const optimized: Record<string, any[]> = {};
+    for (const [genre, movies] of Object.entries(moviesByGenre as Record<string, any[]>)) {
+      // Randomize and slice to 10 for massive performance boost
+      optimized[genre] = [...movies].sort(() => 0.5 - Math.random()).slice(0, 10);
+    }
+    return optimized;
+  }, [moviesByGenre, profile?.id]);
+
   if (searchQuery) {
     return (
       <div
@@ -286,7 +296,7 @@ const HomeView = React.memo(({
               />
             )}
 
-            {Object.entries(moviesByGenre).map(([genre, genreMovies]: [string, any]) => (
+            {Object.entries(optimizedGenreMovies).map(([genre, genreMovies]: [string, any]) => (
               <Row 
                 key={genre}
                 title={genre}
@@ -1445,7 +1455,7 @@ const ProfilePageView = React.memo(({
         onClick={handleLogout}
         className="mt-20 flex items-center gap-4 text-red-600 font-black uppercase tracking-[0.3em] text-xs italic hover:text-red-500 transition-colors"
       >
-        <LogOut size={20} /> Sair do Netplay
+        <LogOut size={20} /> Sair do NetPremium
       </button>
     </motion.div>
   );
@@ -3432,7 +3442,7 @@ export default function App() {
   const sendTestNotification = async () => {
     await notificationService.sendNotification(
       '🔔 Teste de Notificação',
-      'Sua conta Netplay está configurada corretamente!',
+      'Sua conta NetPremium está configurada corretamente!',
       'https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png'
     );
   };

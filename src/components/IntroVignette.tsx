@@ -11,7 +11,7 @@ interface IntroVignetteProps {
 const PHRASES = [
   "Preparando a pipoca...",
   "Buscando os melhores lançamentos...",
-  "Netplay: O cinema na palma da sua mão.",
+  "NetPremium: O cinema na palma da sua mão.",
   "Sabia que temos mais de 5.000 títulos?",
   "Novos episódios adicionados diariamente.",
   "Qualidade 4K Ultra HD disponível.",
@@ -186,7 +186,7 @@ const IntroVignette: React.FC<IntroVignetteProps> = ({ onComplete, isLoading = f
                   className="flex items-center gap-2"
                 >
                   <span className="text-4xl md:text-8xl font-black text-white uppercase italic tracking-tighter drop-shadow-2xl">NET</span>
-                  <span className="text-4xl md:text-8xl font-black text-red-600 uppercase italic tracking-tighter drop-shadow-2xl">PLAY</span>
+                  <span className="text-4xl md:text-8xl font-black text-red-600 uppercase italic tracking-tighter drop-shadow-2xl">PREMIUM</span>
                 </motion.div>
               )}
             </AnimatePresence>

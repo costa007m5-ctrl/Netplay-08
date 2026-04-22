@@ -370,7 +370,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       <div style="text-align: center; margin-bottom: 25px;">
         ${LOGO_HTML}
       </div>
-      <h1 style="font-weight: 900; font-style: italic; text-transform: uppercase;">BEM-VINDO AO NETPLAY 🎁</h1>
+      <h1 style="font-weight: 900; font-style: italic; text-transform: uppercase;">BEM-VINDO AO NETPREMIUM 🎁</h1>
       <p style="color: #888;">Olá <strong>{{ .Email }}</strong>, você recebeu um convite VIP para acessar nossa plataforma.</p>
       <a href="{{ .ConfirmationURL }}" class="btn">Aceitar Convite</a>
     </div>
@@ -914,7 +914,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           ctx.textBaseline = 'middle';
           ctx.font = `italic 900 ${150 * scale}px Arial, sans-serif`;
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillText('NETPLAY', centerX, height * 0.65);
+          ctx.fillText('NETPREMIUM', centerX, height * 0.65);
           
           // Subtitle for splash
           if (asset.name.includes('Splash')) {

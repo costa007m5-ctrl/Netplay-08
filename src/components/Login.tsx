@@ -237,7 +237,7 @@ const Login: React.FC<LoginProps> = ({ initialMode = 'login', movies = [] }) => 
             <Play size={20} className="text-white fill-white ml-1" />
           </div>
           <div className="flex flex-col">
-            <span className="text-white font-black text-2xl md:text-3xl italic tracking-tight uppercase leading-none">Net Play</span>
+            <span className="text-white font-black text-2xl md:text-3xl italic tracking-tight uppercase leading-none">NetPremium</span>
             <span className="text-[8px] md:text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] mt-1 ml-1">Premium Hub</span>
           </div>
         </div>
@@ -310,7 +310,7 @@ const Login: React.FC<LoginProps> = ({ initialMode = 'login', movies = [] }) => 
               <div className="flex flex-col items-center text-center">
                 <div className="flex items-center gap-3 mb-2">
                   <Play size={28} className="text-red-600 fill-red-600 drop-shadow-[0_0_15px_rgba(220,38,38,0.6)]" />
-                  <h1 className="text-white text-4xl font-black uppercase tracking-tighter italic">Netplay</h1>
+                  <h1 className="text-white text-4xl font-black uppercase tracking-tighter italic">NetPremium</h1>
                 </div>
                 <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-2" />
                 <span className="text-red-500 font-black text-[10px] uppercase tracking-[0.4em] italic opacity-80">Seu Premium Hub</span>
@@ -538,7 +538,7 @@ const Login: React.FC<LoginProps> = ({ initialMode = 'login', movies = [] }) => 
 
       {/* Footer Branding */}
       <div className="absolute bottom-10 left-0 right-0 text-center z-20 opacity-30">
-        <p className="text-white text-[9px] font-black uppercase tracking-[0.8em] italic">Streaming experience powered by Netplay Engine</p>
+        <p className="text-white text-[9px] font-black uppercase tracking-[0.8em] italic">Streaming experience powered by NetPremium Engine</p>
       </div>
     </div>
   );
