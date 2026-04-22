@@ -120,6 +120,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [showStuckButton, setShowStuckButton] = useState(false);
   const [error, setError] = useState<{ message: string; type: 'network' | 'format' | 'unknown' } | null>(null);
   const [showRecsOverlay, setShowRecsOverlay] = useState(false);
@@ -222,6 +223,44 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
     localStorage.setItem('autoRotate', JSON.stringify(newState));
   };
 
+  const loadingFacts = useMemo(() => {
+    const facts = [
+      `Conectando a ${title || 'este filme'}...`,
+      "Ajustando configurações de servidor...",
+      "Preparando a melhor resolução possível...",
+      "Baixando os primeiros fragmentos de vídeo...",
+      "Conectando ao cluster mais próximo...",
+      "Sincronizando áudio e vídeo..."
+    ];
+    return facts.sort(() => Math.random() - 0.5); // Shuffle
+  }, [title]);
+
+  useEffect(() => {
+    if (!isLoading) return;
+    const interval = setInterval(() => {
+      setLoadingMessageIndex(prev => (prev + 1) % loadingFacts.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isLoading, loadingFacts.length]);
+
+  const hasStartedPlayedRef = useRef(false);
+
+  useEffect(() => {
+    let timer: any;
+    if (!hasStartedPlayedRef.current && !isPlaying && loadingProgress === 100) {
+      // (10 segundos a partir de chegar em 100% se ainda não estiver tocando)
+      timer = setTimeout(() => {
+        // Só mostra se ainda não tocou
+        if (!hasStartedPlayedRef.current) {
+          setShowStuckButton(true);
+        }
+      }, 10000);
+    } else {
+      setShowStuckButton(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isPlaying, loadingProgress]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -251,19 +290,11 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
       if (!videoToPlay) return;
 
       const lowerSrc = videoToPlay.toLowerCase();
-      let stuckTimer: NodeJS.Timeout;
       let startLoadTimer: NodeJS.Timeout;
 
       // CAMINHO 1: PLAYER DE INÍCIO (FRESH)
       const initFreshMode = () => {
         console.log("Player Independente: FRESH MODE");
-        stuckTimer = setTimeout(() => {
-          if (!isMounted) return;
-          if (isLoading || !isPlaying) {
-             console.log("Watchdog: Forçando exibição do botão de reparo após 120s...");
-             setShowStuckButton(true);
-          }
-        }, 120000); // Alterado para 2 minutos
 
         startLoadTimer = setTimeout(() => {
           if (!isMounted || !video) return;
@@ -337,10 +368,6 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
       // CAMINHO 2: PLAYER DE RETOMADA (RESUME)
       const initResumeMode = () => {
         console.log("Player Independente: RESUME MODE", initialTime);
-        stuckTimer = setTimeout(() => {
-          if (!isMounted) return;
-          if (isLoading || !isPlaying) setShowStuckButton(true);
-        }, 120000); // Alterado para 2 minutos
 
         startLoadTimer = setTimeout(() => {
           if (!isMounted || !video) return;
@@ -419,7 +446,6 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
       }
 
       return () => {
-        clearTimeout(stuckTimer);
         clearTimeout(startLoadTimer);
       };
     };
@@ -505,6 +531,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
     };
 
     const handlePlaying = () => {
+      hasStartedPlayedRef.current = true;
       setIsLoading(false);
       setIsPlaying(true);
       setLoadingProgress(100);
@@ -1173,9 +1200,15 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
               </div>
             </div>
             
-            <p className="text-white/60 font-black tracking-[0.3em] uppercase text-[7px] md:text-[9px] animate-pulse italic">
-              Preparando o espetáculo...
-            </p>
+            <motion.p 
+              key={loadingMessageIndex}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className="text-white/80 font-black tracking-widest uppercase text-[10px] md:text-[12px] italic mt-4 max-w-lg leading-relaxed h-12 flex items-center justify-center text-balance"
+            >
+              {loadingFacts[loadingMessageIndex]}
+            </motion.p>
 
             {showStuckButton && (
               <motion.div 
