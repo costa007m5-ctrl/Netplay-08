@@ -124,7 +124,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
   const [error, setError] = useState<{ message: string; type: 'network' | 'format' | 'unknown' } | null>(null);
   const [showRecsOverlay, setShowRecsOverlay] = useState(false);
   const [showTvShare, setShowTvShare] = useState(false);
-  const [showLogoOverlay, setShowLogoOverlay] = useState(true);
+  const [showLogoOverlay, setShowLogoOverlay] = useState(false);
   const [showAutoNext, setShowAutoNext] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
   const [qualityLevels, setQualityLevels] = useState<{ id: number; height: number; bitrate: number }[]>([]);
@@ -331,7 +331,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
             video.src = videoToPlay;
             video.play().catch(() => {});
           }
-        }, 10);
+        }, 0);
       };
 
       // CAMINHO 2: PLAYER DE RETOMADA (RESUME)
@@ -408,7 +408,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
                 video.play().catch(() => {});
             }, { once: true });
           }
-        }, 50);
+        }, 0);
       };
 
       // EXECUÇÃO INDEPENDENTE
