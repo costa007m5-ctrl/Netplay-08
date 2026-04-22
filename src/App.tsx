@@ -115,7 +115,8 @@ const HomeView = React.memo(({
   profile,
   cinemaMovies,
   searchQuery,
-  searchResults
+  searchResults,
+  categories
 }: any) => {
   const navigate = useNavigate();
   const randomBannerMovie = useMemo(() => {
@@ -211,6 +212,38 @@ const HomeView = React.memo(({
           onSelectProvider={(p: any) => navigate(`/provider/${p}`)} 
           streamingProviders={streamingProviders}
         />
+
+        {/* 🚀 CATEGORIES CAROUSEL SYSTEM NA TELA INICIAL */}
+        <section className="space-y-4 md:space-y-6 group pt-4 md:pt-8 px-4 md:px-12">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xl md:text-3xl font-black uppercase italic tracking-tighter text-white">Explorar por Gênero</h3>
+          </div>
+          
+          <div className="flex overflow-x-auto no-scrollbar gap-4 md:gap-6 pb-6 snap-x -mx-4 px-4 md:mx-0 md:px-0">
+            {categories.map(cat => (
+              <motion.div 
+                key={cat.id}
+                whileHover={{ y: -5, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate(`/genre/${cat.name}`)}
+                className="relative min-w-[280px] md:min-w-[400px] aspect-[21/9] md:aspect-video rounded-3xl overflow-hidden group/card cursor-pointer border border-white/5 bg-[#0a0a0a] snap-center shadow-lg transition-all"
+              >
+                <img 
+                  src={cat.backdrop} 
+                  className="w-full h-full object-cover transition-all duration-1000 opacity-60 group-hover/card:scale-110 group-hover/card:opacity-100" 
+                  referrerPolicy="no-referrer" 
+                  alt={cat.name}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent p-6 md:p-10 flex flex-col justify-end">
+                  <div className="mb-4 w-10 h-10 md:w-16 md:h-16 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/10 group-hover/card:bg-red-600 transition-all shadow-xl">
+                    {cat.icon && <cat.icon size={window.innerWidth < 768 ? 20 : 32} className="text-white" />}
+                  </div>
+                  <h4 className="text-white font-black uppercase text-2xl md:text-4xl tracking-tighter italic leading-none drop-shadow-md">{cat.name}</h4>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
 
         {profile && continueWatching.length > 0 && (
           <ContinueWatchingRow 
@@ -2556,16 +2589,28 @@ export default function App() {
         const collRes = await tmdb.get(requests.fetchCollection(collId));
         const collection = collRes.data;
 
-        // Buscar imagens para encontrar o logo
-        const imagesRes = await tmdb.get(`/collection/${collId}/images`, { params: { include_image_language: 'pt,en,null' } });
-        const logos = imagesRes.data.logos || [];
+        // Como a rota /collection/:id/images na TMDB não retorna logos (apenas posters/backdrops),
+        // buscamos a logo diretamente a partir das imagens do primeiro filme ou série da coleção.
+        let logoPath = firstMovie.collection_logo_path;
         
-        // Preferir logo em Português, depois Inglês, depois o primeiro disponível
-        const logo = logos.find((l: any) => l.iso_639_1 === 'pt') || 
-                     logos.find((l: any) => l.iso_639_1 === 'en') || 
-                     logos[0];
+        try {
+          const imagesPath = firstMovie.type === 'series' ? requests.tvImages(firstMovie.id) : requests.movieImages(firstMovie.id);
+          const imagesRes = await tmdb.get(imagesPath, { params: { include_image_language: 'pt,en,null' } });
+          const logos = imagesRes.data.logos || [];
+          
+          const logo = logos.find((l: any) => l.iso_639_1 === 'pt') || 
+                       logos.find((l: any) => l.iso_639_1 === 'en') || 
+                       logos[0];
+          
+          if (logo) {
+            logoPath = `https://image.tmdb.org/t/p/original${logo.file_path}`;
+          } else if (firstMovie.logo_path) {
+            logoPath = firstMovie.logo_path; // Fallback para a logo do filme em si
+          }
+        } catch (e) {
+          console.error("Erro ao buscar logo para a coleção:", e);
+        }
 
-        const logoPath = logo ? `https://image.tmdb.org/t/p/original${logo.file_path}` : firstMovie.collection_logo_path;
         const posterPath = collection.poster_path ? `https://image.tmdb.org/t/p/original${collection.poster_path}` : firstMovie.collection_poster_path;
 
         // Atualizar todos os filmes desta coleção
@@ -3673,6 +3718,7 @@ export default function App() {
               profile={profile}
               searchQuery={searchQuery}
               searchResults={searchResults}
+              categories={categories}
             />
           } />
           

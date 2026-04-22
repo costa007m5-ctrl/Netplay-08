@@ -1543,8 +1543,8 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
           {/* Controles Inferiores */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
-              {isHost && (
-                <button onClick={togglePlay} className="text-white">
+              {(!roomId || isHost) && (
+                <button onClick={togglePlay} className="text-white hover:text-red-500 transition-colors">
                   {isPlaying ? <Pause size={32} fill="white" /> : <Play size={32} fill="white" />}
                 </button>
               )}
