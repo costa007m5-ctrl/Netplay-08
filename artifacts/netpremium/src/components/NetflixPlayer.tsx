@@ -254,9 +254,16 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
       setShowLoadingScreen(false);
       return;
     }
-    const t = setTimeout(() => setShowLoadingScreen(true), 600);
+    const t = setTimeout(() => setShowLoadingScreen(true), 350);
     return () => clearTimeout(t);
   }, [isLoading]);
+
+  // Limpa o toast de qualidade automaticamente após 3s, qualquer que seja a fonte
+  useEffect(() => {
+    if (!qualityToast) return;
+    const t = setTimeout(() => setQualityToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [qualityToast]);
 
   const hasStartedPlayedRef = useRef(false);
 
@@ -378,6 +385,13 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
                 tryPlay();
               }
             });
+            // ABR sobe a qualidade automaticamente conforme a banda — avisa o usuário
+            hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
+              const lvl = hls.levels?.[data.level];
+              if (lvl?.height && hasStartedPlayedRef.current) {
+                setQualityToast(`Qualidade aumentada para ${getFullQualityName(lvl.height)}`);
+              }
+            });
             hls.on(Hls.Events.ERROR, (_event, data) => {
               console.warn("HLS Error:", data);
               if (data.fatal) {
@@ -434,6 +448,13 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
               setIsLoading(false);
               setShowLogoOverlay(false);
               tryPlay();
+            });
+            // ABR sobe a qualidade automaticamente conforme a banda — avisa o usuário
+            hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
+              const lvl = hls.levels?.[data.level];
+              if (lvl?.height && hasStartedPlayedRef.current) {
+                setQualityToast(`Qualidade aumentada para ${getFullQualityName(lvl.height)}`);
+              }
             });
             hls.on(Hls.Events.ERROR, (_event, data) => {
               console.warn("HLS Error:", data);
@@ -1107,6 +1128,8 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         preload="auto"
         webkit-playsinline="true"
         x-webkit-airplay="allow"
+        onLoadedData={() => { setIsLoading(false); setShowLogoOverlay(false); }}
+        onPlaying={() => { setIsLoading(false); setShowLogoOverlay(false); }}
         onClick={handleContainerClick}
         onDoubleClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
