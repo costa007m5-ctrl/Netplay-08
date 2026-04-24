@@ -247,14 +247,15 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
     return () => clearInterval(interval);
   }, [isLoading, loadingFacts.length]);
 
-  // Atraso curto antes de mostrar a tela de loading: se o vídeo já estiver tocando
-  // antes desse tempo, o usuário NUNCA vê o overlay (sensação de play instantâneo).
+  // Atraso longo antes de mostrar a tela de loading: o usuário só vê o overlay
+  // se o vídeo levar MAIS de 1.8s para começar. Em conexões normais, o vídeo
+  // aparece direto sem nenhuma barra de progresso — sensação 100% instantânea.
   useEffect(() => {
     if (!isLoading) {
       setShowLoadingScreen(false);
       return;
     }
-    const t = setTimeout(() => setShowLoadingScreen(true), 350);
+    const t = setTimeout(() => setShowLoadingScreen(true), 1800);
     return () => clearTimeout(t);
   }, [isLoading]);
 
@@ -318,8 +319,8 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         enableWorker: true,
         lowLatencyMode: true,
         startPosition: startPos,
-        // Buffer inicial mínimo = começa a tocar quase instantâneo
-        maxBufferLength: 2,
+        // Buffer inicial mínimo absoluto: começa a tocar com 1s bufferizado
+        maxBufferLength: 1,
         maxMaxBufferLength: 30,
         maxBufferSize: 10 * 1024 * 1024,
         backBufferLength: 10,
@@ -332,6 +333,12 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         abrEwmaSlowLive: 3,
         // Não testar banda antes de começar (economiza ~500ms)
         testBandwidth: false,
+        // Recupera de stalls quase de imediato
+        nudgeOffset: 0.05,
+        nudgeMaxRetry: 10,
+        maxStarvationDelay: 0.5,
+        maxLoadingDelay: 1,
+        highBufferWatchdogPeriod: 0.5,
         // Timeouts agressivos para falhar rápido e tentar de novo
         manifestLoadingTimeOut: 8000,
         manifestLoadingRetryDelay: 100,
@@ -712,8 +719,13 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
       setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    
-    // Auto-rotação para paisagem em dispositivos móveis
+
+    let lockAttempts = 0;
+    let lockTimer: any;
+
+    // Auto-rotação para paisagem em dispositivos móveis.
+    // Mantém o lock mesmo se o usuário girar manualmente: re-aplica em cada
+    // mudança de orientação para evitar que a página re-renderize/reinicie.
     const lockOrientation = async () => {
       if (!autoRotate) return;
       try {
@@ -721,7 +733,6 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         if (containerRef.current && screenfull.isEnabled && !screenfull.isFullscreen) {
           await screenfull.request(containerRef.current).catch(() => {});
         }
-
         if (screen.orientation && (screen.orientation as any).lock) {
           await (screen.orientation as any).lock('landscape').catch(() => {});
         }
@@ -729,12 +740,41 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         console.warn("Orientation lock not supported", e);
       }
     };
+
+    // Mantém o lock vivo: se a orientação mudar (ex: usuário gira manualmente
+    // ou o sistema solta o lock), tenta travar de novo até 5 vezes. Isso
+    // impede o "reinicia o app ao girar" que aparece em alguns aparelhos.
+    const handleOrientationChange = () => {
+      if (!autoRotate) return;
+      if (lockAttempts >= 5) return;
+      lockAttempts++;
+      clearTimeout(lockTimer);
+      lockTimer = setTimeout(() => {
+        if (screen.orientation && (screen.orientation as any).lock) {
+          (screen.orientation as any).lock('landscape').catch(() => {});
+        }
+      }, 200);
+    };
+
     lockOrientation();
+    if (screen.orientation) {
+      screen.orientation.addEventListener?.('change', handleOrientationChange);
+    }
+    window.addEventListener('orientationchange', handleOrientationChange);
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      if (screen.orientation) {
+        screen.orientation.removeEventListener?.('change', handleOrientationChange);
+      }
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      clearTimeout(lockTimer);
+      // Volta para retrato (modo "em pé") ao sair do filme
       if (screen.orientation && screen.orientation.unlock) {
-        screen.orientation.unlock();
+        try { screen.orientation.unlock(); } catch (e) {}
+      }
+      if (screenfull.isEnabled && screenfull.isFullscreen) {
+        screenfull.exit().catch(() => {});
       }
     };
   }, [autoRotate]);
@@ -1129,6 +1169,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         webkit-playsinline="true"
         x-webkit-airplay="allow"
         onLoadedData={() => { setIsLoading(false); setShowLogoOverlay(false); }}
+        onCanPlay={() => { setIsLoading(false); setShowLogoOverlay(false); }}
         onPlaying={() => { setIsLoading(false); setShowLogoOverlay(false); }}
         onClick={handleContainerClick}
         onDoubleClick={(e) => {
