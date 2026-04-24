@@ -119,6 +119,9 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  // Tela cheia de carregamento só aparece se o vídeo demorar > 600ms para iniciar.
+  // Cargas rápidas nunca veem o overlay, dando sensação de play instantâneo.
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [showStuckButton, setShowStuckButton] = useState(false);
@@ -244,6 +247,17 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
     return () => clearInterval(interval);
   }, [isLoading, loadingFacts.length]);
 
+  // Atraso curto antes de mostrar a tela de loading: se o vídeo já estiver tocando
+  // antes desse tempo, o usuário NUNCA vê o overlay (sensação de play instantâneo).
+  useEffect(() => {
+    if (!isLoading) {
+      setShowLoadingScreen(false);
+      return;
+    }
+    const t = setTimeout(() => setShowLoadingScreen(true), 600);
+    return () => clearTimeout(t);
+  }, [isLoading]);
+
   const hasStartedPlayedRef = useRef(false);
 
   useEffect(() => {
@@ -297,10 +311,10 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         enableWorker: true,
         lowLatencyMode: true,
         startPosition: startPos,
-        // Buffer inicial menor = começa a tocar mais rápido
-        maxBufferLength: 6,
+        // Buffer inicial mínimo = começa a tocar quase instantâneo
+        maxBufferLength: 2,
         maxMaxBufferLength: 30,
-        maxBufferSize: 30 * 1024 * 1024,
+        maxBufferSize: 10 * 1024 * 1024,
         backBufferLength: 10,
         autoStartLoad: true,
         // Pré-busca o primeiro fragmento ao parsear o manifest
@@ -311,10 +325,18 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         abrEwmaSlowLive: 3,
         // Não testar banda antes de começar (economiza ~500ms)
         testBandwidth: false,
-        fragLoadingMaxRetry: 10,
-        manifestLoadingMaxRetry: 10,
-        manifestLoadingRetryDelay: 300,
-        levelLoadingMaxRetry: 10,
+        // Timeouts agressivos para falhar rápido e tentar de novo
+        manifestLoadingTimeOut: 8000,
+        manifestLoadingRetryDelay: 100,
+        manifestLoadingMaxRetry: 6,
+        levelLoadingTimeOut: 8000,
+        levelLoadingRetryDelay: 100,
+        levelLoadingMaxRetry: 6,
+        fragLoadingTimeOut: 12000,
+        fragLoadingRetryDelay: 100,
+        fragLoadingMaxRetry: 6,
+        // Carrega o vídeo em paralelo a outras requisições
+        progressive: true,
         xhrSetup: (xhr: XMLHttpRequest) => {
           xhr.withCredentials = false;
         },
@@ -339,7 +361,10 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
             hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
               const levels = data.levels.map((l, i) => ({ id: i, height: l.height, bitrate: l.bitrate })).sort((a, b) => b.height - a.height);
               setQualityLevels(levels);
-              setLoadingProgress(75);
+              setLoadingProgress(80);
+              // Libera o overlay assim que o manifest é entendido — o vídeo já vai aparecer
+              setIsLoading(false);
+              setShowLogoOverlay(false);
               tryPlay();
             });
             hls.on(Hls.Events.FRAG_BUFFERED, () => {
@@ -374,8 +399,11 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
             tryPlay();
           }
         } else {
+          // Vídeo direto (mp4, etc): tira o loading imediatamente, autoplay cuida do resto
           video.src = videoToPlay;
           video.load();
+          setIsLoading(false);
+          setShowLogoOverlay(false);
           tryPlay();
         }
       };
@@ -393,7 +421,9 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
             hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
               const levels = data.levels.map((l, i) => ({ id: i, height: l.height, bitrate: l.bitrate })).sort((a, b) => b.height - a.height);
               setQualityLevels(levels);
-              setLoadingProgress(75);
+              setLoadingProgress(80);
+              setIsLoading(false);
+              setShowLogoOverlay(false);
               tryPlay();
             });
             hls.on(Hls.Events.FRAG_BUFFERED, () => {
@@ -941,7 +971,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
     >
       {/* Backdrop de fundo enquanto carrega ou como papel de parede */}
       <AnimatePresence>
-        {(isLoading || showLogoOverlay) && (
+        {(showLoadingScreen || showLogoOverlay) && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1138,8 +1168,8 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* Overlay de Carregamento Circular (1-100%) */}
-      {isLoading && !error && (
+      {/* Overlay de Carregamento Circular (1-100%) - só após 600ms para parecer instantâneo */}
+      {showLoadingScreen && !error && (
         <div className="absolute inset-0 z-[310] flex flex-col items-center justify-center bg-black/95 backdrop-blur-2xl p-4">
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}

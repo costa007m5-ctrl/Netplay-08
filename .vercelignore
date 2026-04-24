@@ -1,0 +1,10 @@
+.git
+.cache
+.local
+.agents
+.migration-backup
+artifacts/api-server
+artifacts/mockup-sandbox
+node_modules
+**/node_modules
+**/dist
