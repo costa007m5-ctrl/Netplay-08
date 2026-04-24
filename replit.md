@@ -16,6 +16,12 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Artifacts
+
+- `artifacts/netpremium` — NetPremium web app (React + Vite SPA, mounted at `/`). Ported from a Vercel/v0 import. Uses `react-router-dom`, Supabase, Firebase, TMDB, Socket.IO, motion, etc. Optional env vars: `VITE_TMDB_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_GOOGLE_DRIVE_API_KEY`. Without these the app shows a setup screen.
+- `artifacts/api-server` — Express API skeleton (mounted at `/api`).
+- `artifacts/mockup-sandbox` — Canvas mockup sandbox.
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages
