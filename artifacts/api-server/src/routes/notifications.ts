@@ -4,6 +4,18 @@ import axios from "axios";
 const router: IRouter = Router();
 
 router.post("/notifications/send", async (req, res) => {
+  const adminKey = process.env["NOTIFICATIONS_ADMIN_KEY"];
+  if (adminKey) {
+    const provided =
+      (req.headers["x-admin-key"] as string | undefined) ||
+      (req.headers.authorization?.startsWith("Bearer ")
+        ? req.headers.authorization.slice(7)
+        : undefined);
+    if (provided !== adminKey) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+  }
+
   const { title, message, imageUrl, data } = req.body ?? {};
   const appId =
     process.env["VITE_ONESIGNAL_APP_ID"] ||

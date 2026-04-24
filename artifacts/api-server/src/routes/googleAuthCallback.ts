@@ -42,19 +42,23 @@ router.get(
         expiry_date: Date.now() + expires_in * 1000,
       };
 
+      const allowedOrigin = getAppUrl(req);
       res.send(`
         <html>
           <body>
             <script>
-              if (window.opener) {
-                window.opener.postMessage({
-                  type: 'GOOGLE_DRIVE_AUTH_SUCCESS',
-                  payload: ${JSON.stringify(accountData)}
-                }, '*');
-                window.close();
-              } else {
-                window.location.href = '/';
-              }
+              (function () {
+                var TARGET_ORIGIN = ${JSON.stringify(allowedOrigin)};
+                if (window.opener) {
+                  window.opener.postMessage({
+                    type: 'GOOGLE_DRIVE_AUTH_SUCCESS',
+                    payload: ${JSON.stringify(accountData)}
+                  }, TARGET_ORIGIN);
+                  window.close();
+                } else {
+                  window.location.href = '/';
+                }
+              })();
             </script>
             <p>Autenticação bem-sucedida! Você já pode fechar esta janela.</p>
           </body>
