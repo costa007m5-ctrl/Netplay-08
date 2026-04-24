@@ -1,9 +1,9 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import axios from "axios";
 
 const router: IRouter = Router();
 
-function getAppUrl(req: import("express").Request): string {
+function getAppUrl(req: Request): string {
   if (process.env["APP_URL"]) return process.env["APP_URL"];
   const proto =
     (req.headers["x-forwarded-proto"] as string | undefined) ||
@@ -14,7 +14,7 @@ function getAppUrl(req: import("express").Request): string {
 
 router.get(
   ["/auth/google/callback", "/auth/google/callback/"],
-  async (req, res) => {
+  async (req: Request, res: Response): Promise<void> => {
     const { code } = req.query;
     const redirectUri = `${getAppUrl(req)}/auth/google/callback`;
 

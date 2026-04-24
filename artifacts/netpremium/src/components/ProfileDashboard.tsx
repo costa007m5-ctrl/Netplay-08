@@ -50,7 +50,7 @@ export default function ProfileDashboard({
     const seriesIds = new Set();
     
     // Combine IDs from all sources
-    continueWatching.forEach((cw: any) => (cw.type === 'series' || myMovies?.find(m => m.id === cw.id)?.type === 'series') ? seriesIds.add(cw.id) : movieIds.add(cw.id));
+    continueWatching.forEach((cw: any) => (cw.type === 'series' || myMovies?.find((m: any) => m.id === cw.id)?.type === 'series') ? seriesIds.add(cw.id) : movieIds.add(cw.id));
     myList.forEach((m: any) => m.type === 'series' ? seriesIds.add(m.id) : movieIds.add(m.id));
     favorites.forEach((m: any) => (m.movie_data?.type === 'series' || m.type === 'series') ? seriesIds.add(m.movie_id || m.id) : movieIds.add(m.movie_id || m.id));
 
@@ -307,7 +307,7 @@ export default function ProfileDashboard({
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                       {continueWatching.slice(0, 4).map((cw: any) => {
-                        const m = myMovies?.find(mv => mv.id === cw.id);
+                        const m = myMovies?.find((mv: any) => mv.id === cw.id);
                         if(!m) return null;
                         return (
                            <div key={cw.id} className="cursor-pointer group" onClick={() => navigate(`/movie/${m.id}`)}>
@@ -501,7 +501,7 @@ export default function ProfileDashboard({
                  </h3>
                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                     {favorites.map((fM: any) => {
-                      const movieInfo = myMovies?.find(m => m.id === (fM.movie_data?.id || fM.movie_id)) || fM.movie_data;
+                      const movieInfo = myMovies?.find((m: any) => m.id === (fM.movie_data?.id || fM.movie_id)) || fM.movie_data;
                       if(!movieInfo) return null;
                       return (
                         <div key={fM.id} className="aspect-[2/3] relative rounded-xl overflow-hidden cursor-pointer group hover:ring-4 hover:ring-purple-600 transition-all shadow-xl" onClick={() => navigate(`/movie/${movieInfo.id}`)}>

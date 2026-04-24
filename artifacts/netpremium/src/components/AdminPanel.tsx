@@ -690,7 +690,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         // Match if the library title is very similar to one of the collection part titles
         // We use a simple inclusion check first, which covers most cases like "Harry Potter 1" -> "Harry Potter e a Pedra Filosofal"
         // provided the clean title is used.
-        const isMatch = collectionPartTitles.some(partTitle => {
+        const isMatch = collectionPartTitles.some((partTitle: string) => {
           return movieTitle.includes(partTitle) || partTitle.includes(movieTitle);
         });
 
@@ -2301,7 +2301,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           <p className="text-gray-500 text-xs italic font-medium max-w-xl">Atualize logos, posters e banners de todas as coleções vinculadas. Isso substitui nomes genéricos por artes oficiais.</p>
                         </div>
                         <button
-                          onClick={onUpdateCollectionInfo}
+                          onClick={() => onUpdateCollectionInfo?.()}
                           disabled={collectionAutomationState?.isScanning}
                           className="flex items-center justify-center gap-3 bg-white/10 hover:bg-white/20 text-white font-black italic uppercase text-xs px-8 py-4 rounded-xl transition-all whitespace-nowrap disabled:opacity-50"
                         >
@@ -2410,7 +2410,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                                 <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${movie.type === 'series' ? 'bg-blue-600/10 text-blue-500' : 'bg-purple-600/10 text-purple-500'}`}>
                                   {movie.type === 'series' ? 'Série' : 'Filme'}
                                 </span>
-                                {movie.runtime > 0 && <span className="text-[9px] text-gray-500 font-bold">{movie.runtime}m</span>}
+                                {(movie.runtime ?? 0) > 0 && <span className="text-[9px] text-gray-500 font-bold">{movie.runtime}m</span>}
                                 {movie.actors && <span className="text-[9px] text-gray-600 truncate max-w-[80px]">by {movie.actors.split(',')[0]}</span>}
                               </div>
                             </div>

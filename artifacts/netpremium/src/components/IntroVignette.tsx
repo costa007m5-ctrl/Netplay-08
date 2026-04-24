@@ -63,6 +63,7 @@ const IntroVignette: React.FC<IntroVignetteProps> = ({ onComplete, isLoading = f
       const finalizeTimer = setTimeout(onComplete, 800);
       return () => clearTimeout(finalizeTimer);
     }
+    return undefined;
   }, [animationDone, isLoading, onComplete]);
 
   return (

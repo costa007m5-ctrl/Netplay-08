@@ -1,9 +1,8 @@
-import { Router, type IRouter } from "express";
-import axios from "axios";
+import { Router, type IRouter, type Request, type Response } from "express";
 
 const router: IRouter = Router();
 
-function getAppUrl(req: import("express").Request): string {
+function getAppUrl(req: Request): string {
   if (process.env["APP_URL"]) return process.env["APP_URL"];
   const proto =
     (req.headers["x-forwarded-proto"] as string | undefined) ||
@@ -12,12 +11,13 @@ function getAppUrl(req: import("express").Request): string {
   return `${proto}://${host}`;
 }
 
-router.get("/auth/google/url", (req, res) => {
+router.get("/auth/google/url", (req: Request, res: Response): void => {
   const clientId = process.env["VITE_GOOGLE_CLIENT_ID"];
   if (!clientId) {
-    return res
+    res
       .status(500)
       .json({ error: "VITE_GOOGLE_CLIENT_ID não configurada." });
+    return;
   }
 
   const redirectUri = `${getAppUrl(req)}/auth/google/callback`;

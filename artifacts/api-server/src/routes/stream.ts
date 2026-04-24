@@ -1,19 +1,20 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import axios from "axios";
 
 const router: IRouter = Router();
 
-router.get("/stream/:fileId", async (req, res) => {
+router.get("/stream/:fileId", async (req: Request, res: Response): Promise<void> => {
   const { fileId } = req.params;
   const apiKey = process.env["GOOGLE_DRIVE_API_KEY"];
 
   if (!apiKey || apiKey === "your_google_drive_api_key_here") {
     req.log.error("GOOGLE_DRIVE_API_KEY not configured");
-    return res
+    res
       .status(500)
       .send(
         "Configuração Pendente: Adicione a GOOGLE_DRIVE_API_KEY nos Secrets.",
       );
+    return;
   }
 
   try {
@@ -29,11 +30,12 @@ router.get("/stream/:fileId", async (req, res) => {
       const data = JSON.stringify(checkRes.data);
       if (data.includes("downloadQuotaExceeded")) {
         req.log.error({ fileId }, "Google Drive quota exceeded");
-        return res.status(403).json({
+        res.status(403).json({
           code: "QUOTA_EXCEEDED",
           message:
             "Este filme está muito popular hoje! O Google Drive limitou o streaming direto.",
         });
+        return;
       }
 
       const confirmMatch = data.match(/confirm=([a-zA-Z0-9-_]+)/);
@@ -51,22 +53,31 @@ router.get("/stream/:fileId", async (req, res) => {
     });
 
     if (response.status >= 400) {
-      return res
+      res
         .status(response.status)
         .send(`Erro do Google Drive: ${response.status}`);
+      return;
     }
+
+    const contentTypeRaw = response.headers["content-type"];
+    const contentType =
+      typeof contentTypeRaw === "string" ? contentTypeRaw : "";
+    const contentLengthRaw = response.headers["content-length"];
+    const contentRangeRaw = response.headers["content-range"];
 
     const headers: Record<string, string> = {
       "Accept-Ranges": "bytes",
-      "Content-Type": response.headers["content-type"]?.includes("matroska")
+      "Content-Type": contentType.includes("matroska")
         ? "video/webm"
-        : response.headers["content-type"] || "video/mp4",
+        : contentType || "video/mp4",
     };
 
-    if (response.headers["content-length"])
-      headers["Content-Length"] = response.headers["content-length"];
-    if (response.headers["content-range"])
-      headers["Content-Range"] = response.headers["content-range"];
+    if (contentLengthRaw !== undefined && contentLengthRaw !== null) {
+      headers["Content-Length"] = String(contentLengthRaw);
+    }
+    if (contentRangeRaw !== undefined && contentRangeRaw !== null) {
+      headers["Content-Range"] = String(contentRangeRaw);
+    }
 
     res.writeHead(response.status, headers);
     response.data.pipe(res);

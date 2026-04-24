@@ -149,7 +149,8 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
   const EMOTES = ['🔥', '😂', '😱', '😍', '😢', '👏', '👎', '❓', '🍿', '😮', '💀', '🤡'];
 
   useEffect(() => {
-    if (roomId) {
+    if (!roomId) return undefined;
+    {
       const socket = io();
       socketRef.current = socket;
 
@@ -1076,7 +1077,6 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         preload="auto"
         webkit-playsinline="true"
         x-webkit-airplay="allow"
-        referrerPolicy="no-referrer"
         onClick={handleContainerClick}
         onDoubleClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();

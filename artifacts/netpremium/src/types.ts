@@ -23,6 +23,9 @@ export interface Movie {
   vote_average: number;
   videoUrl?: string; // URL customizada para o vídeo
   videoUrl2?: string; // Segunda URL customizada (ex: Drive/Terabox)
+  // Aliases snake_case que vêm direto do Supabase / TMDB
+  video_url?: string;
+  video_url_2?: string;
   file_name?: string; // Nome real do arquivo
   genres?: string;
   created_at?: string;
@@ -38,8 +41,8 @@ export interface Movie {
   is_hidden?: boolean;
   collection_id?: number;
   collection_name?: string;
-  collection_poster_path?: string;
-  collection_logo_path?: string;
+  collection_poster_path?: string | null;
+  collection_logo_path?: string | null;
 }
 
 export interface StreamingProvider {

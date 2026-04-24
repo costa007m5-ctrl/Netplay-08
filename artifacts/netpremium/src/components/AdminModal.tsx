@@ -54,7 +54,8 @@ const AdminModal: React.FC<AdminModalProps> = ({
     rating: 0,
     actors: '',
     is_hidden: false,
-    episodes: [] as Episode[]
+    episodes: [] as Episode[],
+    watch_providers: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'movie' | 'series'>('all');
@@ -398,7 +399,7 @@ const AdminModal: React.FC<AdminModalProps> = ({
           const seasonNum = sMatch ? parseInt(sMatch[1]) : 1;
           const numbers = name.match(/\d+/g);
           if (numbers) {
-            const found = numbers.find(n => parseInt(n) !== seasonNum);
+            const found = numbers.find((n: string) => parseInt(n) !== seasonNum);
             episodeNum = found ? parseInt(found) : parseInt(numbers[0]);
           }
         }
@@ -410,7 +411,7 @@ const AdminModal: React.FC<AdminModalProps> = ({
           episode: episodeNum,
           videoUrl: `https://drive.google.com/file/d/${f.id}/view`,
           overview: '',
-          still_path: null
+          still_path: undefined
         } as Episode;
       });
 
@@ -1070,7 +1071,7 @@ end $$;
                                {new Date(movie.release_date).getFullYear()}
                              </span>
                           )}
-                          {movie.runtime > 0 && (
+                          {(movie.runtime ?? 0) > 0 && (
                              <span className="text-[10px] text-gray-500 font-medium">
                                {movie.runtime} min
                              </span>

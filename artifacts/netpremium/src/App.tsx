@@ -230,7 +230,7 @@ const HomeView = React.memo(({
           </div>
           
           <div className="flex overflow-x-auto no-scrollbar gap-4 md:gap-6 pb-6 snap-x -mx-4 px-4 md:mx-0 md:px-0">
-            {categories.map(cat => (
+            {categories.map((cat: any) => (
               <motion.div 
                 key={cat.id}
                 whileHover={{ y: -5, scale: 1.02 }}
@@ -1957,7 +1957,7 @@ export default function App() {
             const seasonNum = sMatch ? parseInt(sMatch[1]) : 1;
             const numbers = name.match(/\d+/g);
             if (numbers) {
-              const found = numbers.find(n => parseInt(n) !== seasonNum);
+              const found = numbers.find((n: string) => parseInt(n) !== seasonNum);
               episodeNum = found ? parseInt(found) : parseInt(numbers[0]);
             }
           }
@@ -2067,7 +2067,7 @@ export default function App() {
             const seasonNum = sMatch ? parseInt(sMatch[1]) : 1;
             const numbers = name.match(/\d+/g);
             if (numbers) {
-              const found = numbers.find(n => parseInt(n) !== seasonNum);
+              const found = numbers.find((n: string) => parseInt(n) !== seasonNum);
               episodeNum = found ? parseInt(found) : parseInt(numbers[0]);
             }
           }
@@ -3120,33 +3120,33 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchMyMovies();
-      fetchContinueWatching();
-
-      // Adicionar listener em tempo real para a tabela de filmes
-      const channel = supabase
-        .channel('public:movies')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'movies' }, () => {
-          fetchMyMovies();
-        })
-        .subscribe();
-
-      // Adicionar listener em tempo real para a tabela de minha lista
-      const listChannel = supabase
-        .channel('public:my_list')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'my_list' }, () => {
-          fetchMyList();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-        supabase.removeChannel(listChannel);
-      };
-    } else {
+    if (!user) {
       setMyMovies([]);
+      return undefined;
     }
+    fetchMyMovies();
+    fetchContinueWatching();
+
+    // Adicionar listener em tempo real para a tabela de filmes
+    const channel = supabase
+      .channel('public:movies')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'movies' }, () => {
+        fetchMyMovies();
+      })
+      .subscribe();
+
+    // Adicionar listener em tempo real para a tabela de minha lista
+    const listChannel = supabase
+      .channel('public:my_list')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'my_list' }, () => {
+        fetchMyList();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(listChannel);
+    };
   }, [user]);
 
   const fetchMyList = async () => {
@@ -3184,7 +3184,7 @@ export default function App() {
       if (data) {
         setAppSettings(data);
         if (data.category_backdrops) {
-          setCategories(prev => prev.map(c => data.category_backdrops[c.id] ? { ...c, backdrop: data.category_backdrops[c.id] } : c));
+          setCategories((prev: any) => prev.map((c: any) => data.category_backdrops[c.id] ? { ...c, backdrop: data.category_backdrops[c.id] } : c));
         }
       } else {
         // Criar configurações padrão se não existirem
@@ -3508,8 +3508,8 @@ export default function App() {
       const lockOrientation = async () => {
         try {
           // Tentar entrar em tela cheia se possível (ajuda no lock)
-          const docEl = document.documentElement;
-          if (docEl.requestFullscreen) {
+          const docEl = document.documentElement as HTMLElement & { requestFullscreen?: () => Promise<void> };
+          if (typeof docEl.requestFullscreen === 'function') {
             // Não forçamos fullscreen aqui para não assustar o usuário antes do player carregar,
             // mas o VideoPlayer já faz isso. Apenas tentamos o lock se suportado.
           }
@@ -3524,12 +3524,12 @@ export default function App() {
       // Segunda tentativa após um delay
       const timer = setTimeout(lockOrientation, 1000);
       return () => clearTimeout(timer);
-    } else {
-      // Unlock ao fechar
-      if (screen.orientation && screen.orientation.unlock) {
-        screen.orientation.unlock();
-      }
     }
+    // Unlock ao fechar
+    if (screen.orientation && screen.orientation.unlock) {
+      screen.orientation.unlock();
+    }
+    return undefined;
   }, [selectedMovie]);
 
   const handlePlayNextEpisode = (currentMovie: Movie) => {
@@ -3912,7 +3912,6 @@ export default function App() {
 
         {/* Modal Routes */}
         <AnimatePresence mode="wait">
-          {/* @ts-expect-error - React-Router Types might not include key, but React allows it */}
           <Routes location={location} key={location.pathname}>
             <Route path="/movie/:movieId" element={
               <MovieDetailRouteWrapper 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, type Variants } from 'motion/react';
 import { ChevronRight } from 'lucide-react';
 
 interface StreamingHubProps {
@@ -87,7 +87,7 @@ const StreamingHub = React.memo(({ onSelectProvider, streamingProviders }: Strea
       }, [])
     : defaultProviders;
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -98,14 +98,14 @@ const StreamingHub = React.memo(({ onSelectProvider, streamingProviders }: Strea
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, scale: 0.8, y: 50 },
     show: { 
       opacity: 1, 
       scale: 1, 
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 100,
         damping: 15
       }
@@ -143,7 +143,7 @@ const StreamingHub = React.memo(({ onSelectProvider, streamingProviders }: Strea
         viewport={{ once: true }}
         className="flex overflow-x-auto scrollbar-hide gap-6 md:gap-14 pb-6 md:pb-8 pr-12 snap-x snap-mandatory perspective-2000"
       >
-        {displayProviders.map((provider) => (
+        {displayProviders.map((provider: any) => (
           <motion.button
             key={provider.name}
             variants={itemVariants}
