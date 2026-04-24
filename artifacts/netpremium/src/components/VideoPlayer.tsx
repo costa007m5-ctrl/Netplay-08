@@ -250,21 +250,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ movie, onClose, profileId, ro
 
   useEffect(() => {
     const processVideoUrl = async () => {
-      // Usar a lógica normal
       const url = movie.videoUrl || '';
       const isDriveVideo = url.includes('drive.google.com');
       const driveId = isDriveVideo ? extractDriveId(url) : null;
-      
+
       if (isDriveVideo && driveId) {
-        // Usar o proxy do servidor para o Google Drive para maior confiabilidade
-        setFinalVideoUrl(`/api/stream/${driveId}`);
+        // Se o cliente tem a API Key, usa o endpoint direto da Google
+        // (evita uma camada de proxy = início instantâneo)
+        if (driveApiKey) {
+          setFinalVideoUrl(
+            `https://www.googleapis.com/drive/v3/files/${driveId}?alt=media&key=${driveApiKey}`,
+          );
+        } else {
+          // Caso contrário, usa o proxy do servidor (que precisa de
+          // GOOGLE_DRIVE_API_KEY configurada no backend)
+          setFinalVideoUrl(`/api/stream/${driveId}`);
+        }
       } else {
         setFinalVideoUrl(url);
       }
     };
 
     processVideoUrl();
-
   }, [movie.id, movie.videoUrl, drivePlayMethod, driveApiKey]);
 
   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');

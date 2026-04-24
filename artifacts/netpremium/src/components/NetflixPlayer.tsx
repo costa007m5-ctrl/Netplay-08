@@ -290,152 +290,147 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
       if (!videoToPlay) return;
 
       const lowerSrc = videoToPlay.toLowerCase();
-      let startLoadTimer: NodeJS.Timeout;
+
+      // Configuração HLS otimizada para INÍCIO INSTANTÂNEO
+      const buildHlsConfig = (startPos: number) => ({
+        enableWorker: true,
+        lowLatencyMode: true,
+        startPosition: startPos,
+        // Buffer inicial menor = começa a tocar mais rápido
+        maxBufferLength: 6,
+        maxMaxBufferLength: 30,
+        maxBufferSize: 30 * 1024 * 1024,
+        backBufferLength: 10,
+        autoStartLoad: true,
+        // Pré-busca o primeiro fragmento ao parsear o manifest
+        startFragPrefetch: true,
+        // Começa pela qualidade mais baixa para tocar instantâneo, ABR sobe depois
+        startLevel: 0,
+        abrEwmaFastLive: 1,
+        abrEwmaSlowLive: 3,
+        // Não testar banda antes de começar (economiza ~500ms)
+        testBandwidth: false,
+        fragLoadingMaxRetry: 10,
+        manifestLoadingMaxRetry: 10,
+        manifestLoadingRetryDelay: 300,
+        levelLoadingMaxRetry: 10,
+        xhrSetup: (xhr: XMLHttpRequest) => {
+          xhr.withCredentials = false;
+        },
+      });
+
+      const tryPlay = () => {
+        const p = video.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      };
 
       // CAMINHO 1: PLAYER DE INÍCIO (FRESH)
       const initFreshMode = () => {
         console.log("Player Independente: FRESH MODE");
-
-        startLoadTimer = setTimeout(() => {
-          if (!isMounted || !video) return;
-          setLoadingProgress(25); // Progresso inicial maior para feedback
-          if (lowerSrc.includes('.m3u8')) {
-            if (Hls.isSupported()) {
-              const hls = new Hls({
-                enableWorker: true,
-                lowLatencyMode: true,
-                startPosition: 0,
-                maxBufferLength: 10,
-                maxMaxBufferLength: 30,
-                maxBufferSize: 30 * 1024 * 1024,
-                backBufferLength: 10,
-                autoStartLoad: true,
-                startLevel: 0,
-                abrEwmaFastLive: 1,
-                abrEwmaSlowLive: 3,
-                fragLoadingMaxRetry: 10,
-                manifestLoadingMaxRetry: 10,
-                manifestLoadingRetryDelay: 500,
-                levelLoadingMaxRetry: 10,
-                xhrSetup: (xhr) => { 
-                  xhr.withCredentials = false;
-                }
-              });
-              hls.attachMedia(video);
-              hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(videoToPlay));
-              hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-                const levels = data.levels.map((l, i) => ({ id: i, height: l.height, bitrate: l.bitrate })).sort((a, b) => b.height - a.height);
-                setQualityLevels(levels);
-                setLoadingProgress(50);
-                video.play().catch(() => {});
-              });
-              hls.on(Hls.Events.FRAG_BUFFERED, () => {
-                setLoadingProgress(prev => Math.min(prev + 5, 90));
-              });
-              hls.on(Hls.Events.FRAG_LOADED, (event, data) => {
-                if (data.frag.sn === 0 || isLoading) {
-                  setLoadingProgress(100);
-                  setIsLoading(false);
-                  setShowLogoOverlay(false);
-                }
-              });
-              hls.on(Hls.Events.ERROR, (event, data) => {
-                console.warn("HLS Error:", data);
-                if (data.fatal) {
-                   if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                     setLoadingProgress(prev => Math.max(prev, 15));
-                     hls.startLoad();
-                   }
-                   else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-                   else {
-                     setError({ message: "Erro fatal de carregamento. Verifique sua rede.", type: 'network' });
-                   }
-                }
-              });
-              hlsRef.current = hls;
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-              // Safari Native HLS Fallback
-              video.src = videoToPlay;
-              video.play().catch(() => {});
-            }
-          } else {
+        if (!isMounted || !video) return;
+        // Pulo direto para 50% para feedback visual imediato
+        setLoadingProgress(50);
+        if (lowerSrc.includes('.m3u8')) {
+          if (Hls.isSupported()) {
+            const hls = new Hls(buildHlsConfig(0));
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(videoToPlay));
+            hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+              const levels = data.levels.map((l, i) => ({ id: i, height: l.height, bitrate: l.bitrate })).sort((a, b) => b.height - a.height);
+              setQualityLevels(levels);
+              setLoadingProgress(75);
+              tryPlay();
+            });
+            hls.on(Hls.Events.FRAG_BUFFERED, () => {
+              setLoadingProgress(prev => Math.min(prev + 10, 95));
+            });
+            hls.on(Hls.Events.FRAG_LOADED, (_event, data) => {
+              if (data.frag.sn === 0 || isLoading) {
+                setLoadingProgress(100);
+                setIsLoading(false);
+                setShowLogoOverlay(false);
+                tryPlay();
+              }
+            });
+            hls.on(Hls.Events.ERROR, (_event, data) => {
+              console.warn("HLS Error:", data);
+              if (data.fatal) {
+                 if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                   setLoadingProgress(prev => Math.max(prev, 15));
+                   hls.startLoad();
+                 }
+                 else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+                 else {
+                   setError({ message: "Erro fatal de carregamento. Verifique sua rede.", type: 'network' });
+                 }
+              }
+            });
+            hlsRef.current = hls;
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Safari Native HLS Fallback
             video.src = videoToPlay;
-            video.play().catch(() => {});
+            video.load();
+            tryPlay();
           }
-        }, 0);
+        } else {
+          video.src = videoToPlay;
+          video.load();
+          tryPlay();
+        }
       };
 
       // CAMINHO 2: PLAYER DE RETOMADA (RESUME)
       const initResumeMode = () => {
         console.log("Player Independente: RESUME MODE", initialTime);
-
-        startLoadTimer = setTimeout(() => {
-          if (!isMounted || !video) return;
-          setLoadingProgress(25); // Progresso inicial imediato
-          if (lowerSrc.includes('.m3u8')) {
-            if (Hls.isSupported()) {
-              const hls = new Hls({
-                enableWorker: true,
-                lowLatencyMode: true,
-                startPosition: initialTime,
-                maxBufferLength: 10,
-                maxMaxBufferLength: 30,
-                maxBufferSize: 30 * 1024 * 1024,
-                backBufferLength: 10,
-                autoStartLoad: true,
-                startLevel: 0,
-                abrEwmaFastLive: 1,
-                abrEwmaSlowLive: 3,
-                fragLoadingMaxRetry: 10,
-                manifestLoadingMaxRetry: 10,
-                manifestLoadingRetryDelay: 500,
-                levelLoadingMaxRetry: 10,
-                xhrSetup: (xhr) => { 
-                  xhr.withCredentials = false;
-                }
-              });
-              hls.attachMedia(video);
-              hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(videoToPlay));
-              hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-                const levels = data.levels.map((l, i) => ({ id: i, height: l.height, bitrate: l.bitrate })).sort((a, b) => b.height - a.height);
-                setQualityLevels(levels);
-                setLoadingProgress(50);
-                video.play().catch(() => {});
-              });
-              hls.on(Hls.Events.FRAG_BUFFERED, () => {
-                setLoadingProgress(prev => Math.min(prev + 5, 90));
-              });
-              hls.on(Hls.Events.FRAG_LOADED, () => {
-                setLoadingProgress(100);
-                setIsLoading(false);
-                setShowLogoOverlay(false);
-              });
-              hls.on(Hls.Events.ERROR, (event, data) => {
-                console.warn("HLS Error:", data);
-                if (data.fatal) {
-                   if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                      setLoadingProgress(prev => Math.max(prev, 15));
-                      hls.startLoad();
-                   }
-                   else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-                }
-              });
-              hlsRef.current = hls;
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = videoToPlay;
-                video.addEventListener('loadedmetadata', () => {
-                    video.currentTime = initialTime;
-                    video.play().catch(() => {});
-                }, { once: true });
-            }
-          } else {
-            video.src = videoToPlay;
-            video.addEventListener('loadedmetadata', () => {
-                video.currentTime = initialTime;
-                video.play().catch(() => {});
-            }, { once: true });
+        if (!isMounted || !video) return;
+        setLoadingProgress(50);
+        if (lowerSrc.includes('.m3u8')) {
+          if (Hls.isSupported()) {
+            const hls = new Hls(buildHlsConfig(initialTime));
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(videoToPlay));
+            hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+              const levels = data.levels.map((l, i) => ({ id: i, height: l.height, bitrate: l.bitrate })).sort((a, b) => b.height - a.height);
+              setQualityLevels(levels);
+              setLoadingProgress(75);
+              tryPlay();
+            });
+            hls.on(Hls.Events.FRAG_BUFFERED, () => {
+              setLoadingProgress(prev => Math.min(prev + 10, 95));
+            });
+            hls.on(Hls.Events.FRAG_LOADED, () => {
+              setLoadingProgress(100);
+              setIsLoading(false);
+              setShowLogoOverlay(false);
+              tryPlay();
+            });
+            hls.on(Hls.Events.ERROR, (_event, data) => {
+              console.warn("HLS Error:", data);
+              if (data.fatal) {
+                 if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                    setLoadingProgress(prev => Math.max(prev, 15));
+                    hls.startLoad();
+                 }
+                 else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+              }
+            });
+            hlsRef.current = hls;
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+              video.src = videoToPlay;
+              video.load();
+              video.addEventListener('loadedmetadata', () => {
+                  video.currentTime = initialTime;
+                  tryPlay();
+              }, { once: true });
           }
-        }, 0);
+        } else {
+          video.src = videoToPlay;
+          video.load();
+          video.addEventListener('loadedmetadata', () => {
+              video.currentTime = initialTime;
+              tryPlay();
+          }, { once: true });
+        }
       };
 
       // EXECUÇÃO INDEPENDENTE
@@ -445,9 +440,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         initFreshMode();
       }
 
-      return () => {
-        clearTimeout(startLoadTimer);
-      };
+      return () => {};
     };
 
     // Adicionar listeners ANTES de carregar o vídeo
@@ -477,6 +470,15 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
       if (!hlsRef.current) {
         setCurrentQuality(getQualityLabel(video.videoHeight));
       }
+    };
+
+    // Primeiro frame decodificado: libera a tela INSTANTANEAMENTE
+    const handleLoadedData = () => {
+      setIsLoading(false);
+      setLoadingProgress(100);
+      setShowLogoOverlay(false);
+      const p = video.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
     };
 
     const handleCanPlay = () => {
@@ -621,6 +623,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
 
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('loadeddata', handleLoadedData);
     video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('waiting', handleWaiting);
     video.addEventListener('playing', handlePlaying);
@@ -637,6 +640,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
       if (cleanupInit) cleanupInit();
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('loadeddata', handleLoadedData);
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('playing', handlePlaying);
@@ -1069,6 +1073,7 @@ const NetflixPlayer: React.FC<NetflixPlayerProps> = ({
         className="w-full h-full object-contain"
         autoPlay
         playsInline
+        preload="auto"
         webkit-playsinline="true"
         x-webkit-airplay="allow"
         referrerPolicy="no-referrer"
